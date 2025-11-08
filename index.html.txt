@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI-Powered Smart Waste Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.css" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root{--bg:#0f1724;--card:#111827;--muted:#9ca3af;--accent:#3b82f6}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; background:linear-gradient(180deg,#0b1220 0%, #0f1724 100%); color:#e6eef8}
+    header{padding:36px 48px}
+    h1{font-size:36px;margin:0 0 12px}
+    .container{max-width:1100px;margin:0 auto;padding:0 16px 48px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px}
+    .card{background:rgba(255,255,255,0.03);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .metric{font-size:28px;font-weight:700}
+    .label{color:var(--muted);font-size:14px}
+    .wide{grid-column:1/-1}
+    #chart{height:220px}
+    .left-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .tips ul{padding-left:18px;margin:8px 0}
+    #map{height:320px;border-radius:10px}
+    footer{padding:24px;text-align:center;color:var(--muted)}
+    @media(max-width:900px){.grid{grid-template-columns:1fr} .left-cols{grid-template-columns:1fr} h1{font-size:26px}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>AI-Powered Smart Waste Management and Recycling Assistant</h1>
+      <p style="color:var(--muted);margin-top:6px">Interactive demo dashboard — city waste metrics, predictions, anomaly alerts and recycling tips.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="grid">
+      <div class="card">
+        <div class="label">Today's Waste</div>
+        <div class="metric">{{ data.today_waste_tons }} tons</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Bins Overflowing</div>
+        <div class="metric">{{ data.bins | selectattr('fill_pct', 'gt', 80) | list | length }}</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Predicted Waste (tomorrow)</div>
+        <div class="metric">{{ data.predicted_tomorrow_tons }} tons</div>
+      </div>
+
+      <div class="card wide">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div>
+            <div class="label">Recycling Rate</div>
+            <div class="metric">{{ data.recycling_rate }}%</div>
+          </div>
+          <div style="text-align:right;color:var(--muted)">Model: <strong>LinearReg + IsolationForest</strong></div>
+        </div>
+        <div id="chart"></div>
+      </div>
+
+      <div class="card">
+        <div class="label">Recycling Tips</div>
+        <div class="tips">
+          <ul>
+            <li>Separate recyclables from general waste</li>
+            <li>Rinse containers before recycling</li>
+            <li>Recycle paper, plastic, glass and metal</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card wide">
+        <div class="label">Waste Distribution</div>
+        <div id="map"></div>
+      </div>
+    </section>
+
+    <section style="margin-top:24px" class="card">
+      <h3 style="margin-top:0;color:#fff">Anomaly Alerts</h3>
+      <ul id="alerts" style="color:var(--muted)"></ul>
+    </section>
+
+  </main>
+
+  <footer>
+    Built for Hackathon — AI for Sustainable Cities
+  </footer>
+
+  <script>
+    const sampleData = {{ data|tojson }};
+    document.addEventListener("DOMContentLoaded", ()=>{
+      const trace = { x: sampleData.dates, y: sampleData.daily, type: 'scatter', fill: 'tozeroy', name:'Waste (tons)' };
+      const layout = { margin:{t:8,l:36,r:12,b:36}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(255,255,255,0.02)', font:{color:'#cbd5e1'} };
+      Plotly.newPlot('chart',[trace],layout, {displayModeBar:false});
+
+      const map = L.map('map', { zoomControl:false, attributionControl:false }).setView([40.7138,-74.0060],13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+      sampleData.bins.forEach(b=>{
+        const icon = L.divIcon({className:'bin-icon', html:`<div style="background:var(--accent);color:#fff;padding:6px 8px;border-radius:8px;font-weight:700;font-size:12px">${b.id}</div>`});
+        L.marker([b.lat,b.lon],{icon}).addTo(map).bindPopup(`${b.id}<br/>Fill: ${b.fill_pct}%`);
+      });
+
+      const alertsEl = document.getElementById('alerts');
+      sampleData.bins.forEach(b=>{
+        if(b.fill_pct>90){
+          const li = document.createElement('li');
+          li.innerText = `${b.id} is critically full (${b.fill_pct}%). Schedule immediate pickup.`;
+          alertsEl.appendChild(li);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
