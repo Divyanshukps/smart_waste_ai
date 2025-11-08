@@ -1,10 +1,14 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import random
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route('/', methods=['GET', 'HEAD'])
 def index():
+    # Handle HEAD request from Render (health check)
+    if request.method == 'HEAD':
+        return '', 200
+
     # Sample data (you can replace this with live data or ML model output)
     data = {
         "city": "Sample City",
@@ -23,7 +27,7 @@ def index():
 
 @app.route('/api/data')
 def api_data():
-    # same data endpoint for testing dynamic updates
+    # Same data endpoint for testing dynamic updates
     data = {
         "predicted_tomorrow_tons": round(random.uniform(14.5, 17.5), 1)
     }
@@ -32,5 +36,3 @@ def api_data():
 if __name__ == "__main__":
     from waitress import serve
     serve(app, host="0.0.0.0", port=8080)
-
-
