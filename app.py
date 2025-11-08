@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 import random
 
 app = Flask(__name__)
@@ -12,7 +12,7 @@ def index():
         avg_waste = float(request.form["avg_waste"])  # tons per day
         recycling_rate = float(request.form["recycling_rate"])
 
-        # --- Simple AI-like predictions (demo logic) ---
+        # --- Prediction Logic (AI-like demo) ---
         predicted_tomorrow = round(avg_waste * random.uniform(1.01, 1.15), 2)
         weekly_total = round(predicted_tomorrow * 7, 2)
         monthly_total = round(predicted_tomorrow * 30, 2)
@@ -48,5 +48,8 @@ def index():
 
     return render_template("index.html", result=result)
 
+
+# ✅ Use waitress for production (No warnings)
 if __name__ == "__main__":
-    app.run(debug=True)
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=8080)
