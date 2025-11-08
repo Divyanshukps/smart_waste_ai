@@ -1,12 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Smart Waste AI</title>
+  <meta charset="UTF-8">
+  <title>Smart Waste AI Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ✅ Chart.js for graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- ✅ Simple modern style -->
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1abc9c, #16a085);
+      color: white;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 800px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    p {
+      font-size: 1.2em;
+      margin: 5px 0;
+    }
+    #chart-container {
+      width: 100%;
+      margin-top: 30px;
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      opacity: 0.8;
+    }
+  </style>
 </head>
 <body>
-    <h1>Welcome to Smart Waste AI</h1>
-    <p>City: {{ data.city }}</p>
-    <p>Today's Waste: {{ data.today_waste_tons }} tons</p>
-    <p>Predicted Tomorrow: {{ data.predicted_tomorrow_tons }} tons</p>
+  <div class="container">
+    <h1>♻️ Smart Waste AI</h1>
+    <p><strong>City:</strong> {{ data.city }}</p>
+    <p><strong>Today's Waste:</strong> {{ data.today_waste_tons }} tons</p>
+    <p><strong>Predicted Tomorrow:</strong> <span id="predicted">{{ data.predicted_tomorrow_tons }}</span> tons</p>
+    <p><strong>Recycling Rate:</strong> {{ data.recycling_rate }}%</p>
+
+    <div id="chart-container">
+      <canvas id="wasteChart"></canvas>
+    </div>
+  </div>
+
+  <footer>Powered by Smart Waste AI | Flask + Chart.js</footer>
+
+  <script>
+    // ✅ Chart setup
+    const ctx = document.getElementById('wasteChart').getContext('2d');
+    const wasteChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ data.dates | safe }},
+        datasets: [{
+          label: 'Daily Waste (tons)',
+          data: {{ data.daily | safe }},
+          borderColor: '#fff',
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#fff'
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#fff' },
+            grid: { color: 'rgba(255,255,255,0.2)' }
+          },
+          x: {
+            ticks: { color: '#fff' },
+            grid: { color: 'rgba(255,255,255,0.2)' }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#fff' } }
+        }
+      }
+    });
+
+    // ✅ Auto-refresh predicted data every 5 seconds
+    async function updatePrediction() {
+      try {
+        const res = await fetch('/api/data');
+        const newData = await res.json();
+        document.getElementById('predicted').textContent = newData.predicted_tomorrow_tons;
+      } catch (err) {
+        console.error("Error updating data:", err);
+      }
+    }
+    setInterval(updatePrediction, 5000);
+  </script>
 </body>
 </html>
