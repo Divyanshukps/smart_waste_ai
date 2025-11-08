@@ -4,114 +4,161 @@
   <meta charset="UTF-8">
   <title>Smart Waste AI Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- ✅ Chart.js for graphs -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- ✅ Simple modern style -->
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #1abc9c, #16a085);
-      color: white;
+      background: linear-gradient(135deg, #11998e, #38ef7d);
       margin: 0;
       padding: 0;
-      text-align: center;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+      color: #fff;
     }
+
+    h1 {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 2.5em;
+    }
+
     .container {
+      width: 90%;
+      max-width: 1000px;
+      margin: 20px auto;
       background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(10px);
       border-radius: 20px;
       padding: 30px;
-      margin: 20px auto;
-      width: 90%;
-      max-width: 800px;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
     }
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 15px;
     }
-    p {
-      font-size: 1.2em;
-      margin: 5px 0;
+
+    input, button {
+      flex: 1 1 45%;
+      padding: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 10px;
+      outline: none;
     }
-    #chart-container {
-      width: 100%;
-      margin-top: 30px;
+
+    button {
+      background: #2ecc71;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
     }
-    footer {
+
+    button:hover {
+      background: #27ae60;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-top: 25px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    #chart {
       margin-top: 40px;
-      font-size: 0.9em;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
       opacity: 0.8;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
+  <h1>♻️ Smart Waste AI</h1>
   <div class="container">
-    <h1>♻️ Smart Waste AI</h1>
-    <p><strong>City:</strong> {{ data.city }}</p>
-    <p><strong>Today's Waste:</strong> {{ data.today_waste_tons }} tons</p>
-    <p><strong>Predicted Tomorrow:</strong> <span id="predicted">{{ data.predicted_tomorrow_tons }}</span> tons</p>
-    <p><strong>Recycling Rate:</strong> {{ data.recycling_rate }}%</p>
+    <form method="POST">
+      <input type="text" name="city" placeholder="Enter City Name" required>
+      <input type="number" name="population" placeholder="Population" required>
+      <input type="number" step="0.1" name="avg_waste" placeholder="Average Waste (tons/day)" required>
+      <input type="number" step="0.1" name="recycling_rate" placeholder="Recycling Rate (%)" required>
+      <button type="submit">Predict Waste</button>
+    </form>
 
-    <div id="chart-container">
-      <canvas id="wasteChart"></canvas>
+    {% if result %}
+    <div class="cards">
+      <div class="card"><h3>City</h3><p>{{ result.city }}</p></div>
+      <div class="card"><h3>Predicted Tomorrow</h3><p>{{ result.predicted_tomorrow }} tons</p></div>
+      <div class="card"><h3>Weekly Total</h3><p>{{ result.weekly_total }} tons</p></div>
+      <div class="card"><h3>Monthly Total</h3><p>{{ result.monthly_total }} tons</p></div>
+      <div class="card"><h3>Recyclable Waste</h3><p>{{ result.recyclable }} tons</p></div>
+      <div class="card"><h3>Landfill Waste</h3><p>{{ result.landfill }} tons</p></div>
+      <div class="card"><h3>Carbon Emission</h3><p>{{ result.carbon_emission }} tons CO₂</p></div>
+      <div class="card"><h3>Trucks Needed</h3><p>{{ result.trucks_needed }}</p></div>
+      <div class="card"><h3>Bins Required</h3><p>{{ result.bins_needed }}</p></div>
+      <div class="card"><h3>AI Efficiency</h3><p>{{ result.efficiency }}%</p></div>
     </div>
+
+    <canvas id="chart"></canvas>
+    <script>
+      const ctx = document.getElementById('chart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Predicted', 'Weekly', 'Monthly', 'Recyclable', 'Landfill'],
+          datasets: [{
+            label: 'Waste Prediction (tons)',
+            data: [
+              {{ result.predicted_tomorrow }},
+              {{ result.weekly_total }},
+              {{ result.monthly_total }},
+              {{ result.recyclable }},
+              {{ result.landfill }}
+            ],
+            backgroundColor: ['#27ae60', '#2ecc71', '#1abc9c', '#16a085', '#149174']
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: "#fff" },
+              grid: { color: "rgba(255,255,255,0.2)" }
+            },
+            x: {
+              ticks: { color: "#fff" },
+              grid: { color: "rgba(255,255,255,0.2)" }
+            }
+          },
+          plugins: { legend: { labels: { color: "#fff" } } }
+        }
+      });
+    </script>
+
+    <div class="card" style="margin-top:30px;">
+      <h3>💡 AI Advice</h3>
+      <p>{{ result.ai_advice }}</p>
+    </div>
+    {% endif %}
   </div>
 
-  <footer>Powered by Smart Waste AI | Flask + Chart.js</footer>
-
-  <script>
-    // ✅ Chart setup
-    const ctx = document.getElementById('wasteChart').getContext('2d');
-    const wasteChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: {{ data.dates | safe }},
-        datasets: [{
-          label: 'Daily Waste (tons)',
-          data: {{ data.daily | safe }},
-          borderColor: '#fff',
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          fill: true,
-          tension: 0.3,
-          pointBackgroundColor: '#fff'
-        }]
-      },
-      options: {
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { color: '#fff' },
-            grid: { color: 'rgba(255,255,255,0.2)' }
-          },
-          x: {
-            ticks: { color: '#fff' },
-            grid: { color: 'rgba(255,255,255,0.2)' }
-          }
-        },
-        plugins: {
-          legend: { labels: { color: '#fff' } }
-        }
-      }
-    });
-
-    // ✅ Auto-refresh predicted data every 5 seconds
-    async function updatePrediction() {
-      try {
-        const res = await fetch('/api/data');
-        const newData = await res.json();
-        document.getElementById('predicted').textContent = newData.predicted_tomorrow_tons;
-      } catch (err) {
-        console.error("Error updating data:", err);
-      }
-    }
-    setInterval(updatePrediction, 5000);
-  </script>
+  <footer>🚮 Smart Waste AI — Sustainable Cities with Data Power</footer>
 </body>
 </html>
