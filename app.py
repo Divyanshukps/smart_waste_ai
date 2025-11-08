@@ -5,7 +5,6 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    # Sample data (you can replace this with live data or ML model output)
     data = {
         "city": "Sample City",
         "today_waste_tons": 15.2,
@@ -23,11 +22,11 @@ def index():
 
 @app.route('/api/data')
 def api_data():
-    # same data endpoint for testing dynamic updates
     data = {
         "predicted_tomorrow_tons": round(random.uniform(14.5, 17.5), 1)
     }
     return jsonify(data)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=8080)
